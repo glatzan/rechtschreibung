@@ -17,14 +17,14 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Version bestimmen
         id: version
@@ -43,7 +43,7 @@ jobs:
 
       - name: Testberichte sichern (bei Fehlern)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports
           path: build/reports/tests
@@ -53,7 +53,7 @@ jobs:
 
       - name: Unsignierte Pakete hochladen
         id: upload-unsigned
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: unsigned
           path: |
@@ -78,7 +78,7 @@ jobs:
 
       - name: Signierte Pakete hochladen
         if: vars.SIGNPATH_ORGANIZATION_ID != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: signed
           path: signed/*
@@ -93,7 +93,7 @@ jobs:
       contents: write
     steps:
       - name: Pakete holen (signiert, falls vorhanden)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: "{signed,unsigned}"
           path: artifacts
