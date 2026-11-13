@@ -55,6 +55,26 @@ packaging/ App-Icon (icon.ico, make-icon.ps1)
 - `Rechtschreibung.exe`, `skiko-windows-x64.dll` und das MSI sind **nicht digital signiert**
   (die Java-Laufzeit-DLLs sind von ihren Herstellern signiert). Siehe „Signieren“.
 
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+*(Signierte Releases folgen, sobald die Aufnahme bei SignPath Foundation abgeschlossen ist.)*
+
+**Team roles**
+
+- Committers and reviewers: [glatzan](https://github.com/glatzan)
+- Approvers: [glatzan](https://github.com/glatzan)
+
+Signiert werden nur Dateien, die in diesem Repository aus dem Quellcode gebaut werden
+(`Rechtschreibung.exe` und der MSI-Installer). Mitgelieferte Komponenten Dritter bleiben unverändert
+und tragen ggf. die Signatur ihrer Hersteller.
+
+**Privacy policy**
+
+This program will not transfer any information to other networked systems unless specifically
+requested by the user or the person installing or operating it.
+Das Programm arbeitet vollständig offline und baut keine Netzwerkverbindungen auf.
+
 ## Lizenz
 
 Der eigene Quellcode steht unter der [MIT-Lizenz](LICENSE). Die Programmpakete enthalten zusätzlich
