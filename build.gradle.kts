@@ -7,7 +7,8 @@ plugins {
 }
 
 group = "de.rechtschreibung"
-version = "1.0.0"
+// Version per `-PappVersion=1.2.3` überschreibbar (CI setzt sie aus dem Git-Tag). MSI verlangt x.y.z.
+version = providers.gradleProperty("appVersion").getOrElse("1.0.0")
 
 // Gradle-Testworker (und jpackage) kommen unter Windows nicht mit Umlauten im Pfad zurecht.
 // Liegt das Projekt in so einem Ordner, wird außerhalb gebaut; `dist` kopiert das Ergebnis zurück.
@@ -58,7 +59,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi)
             packageName = "Rechtschreibung"
-            packageVersion = "1.0.0"
+            packageVersion = project.version.toString()
             description = "Offline-Rechtschreib- und Grammatikprüfung für Deutsch"
             appResourcesRootDir.set(legalResources)
             licenseFile.set(project.file("LICENSE"))

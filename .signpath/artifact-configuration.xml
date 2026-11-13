@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Vorlage für die SignPath-Artefaktkonfiguration (in SignPath unter Projekt → Artifact Configurations einfügen).
+  Das hochgeladene GitHub-Artefakt "unsigned" ist ein ZIP mit Portable-ZIP und MSI.
+  Signiert werden nur die eigenen Dateien: der Starter Rechtschreibung.exe und das MSI selbst.
+  Bereits signierte Dateien der Java-Laufzeit bleiben unverändert. skiko-windows-x64.dll (JetBrains)
+  ist eine Fremd-Datei; ob SignPath Foundation sie mitsignieren darf, bei der Aufnahme klären.
+  Pfade bei einer neuen Version anpassen oder in SignPath mit Parametern arbeiten.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <zip-file path="Rechtschreibung-*-portable.zip">
+      <pe-file path="Rechtschreibung/Rechtschreibung.exe">
+        <authenticode-sign />
+      </pe-file>
+    </zip-file>
+    <msi-file path="Rechtschreibung-*.msi">
+      <pe-file-set>
+        <include path="Rechtschreibung.exe" />
+        <for-each>
+          <authenticode-sign />
+        </for-each>
+      </pe-file-set>
+      <authenticode-sign />
+    </msi-file>
+  </zip-file>
+</artifact-configuration>

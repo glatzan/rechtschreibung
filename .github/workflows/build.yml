@@ -1,0 +1,113 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Testen und Pakete bauen (Windows)
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Version bestimmen
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $v = "${{ github.ref_name }}".TrimStart("v")
+          } else {
+            $v = (./gradlew.bat properties -q | Select-String '^version: ').ToString().Split(' ')[1]
+          }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          "Version: $v"
+
+      - name: Tests
+        run: ./gradlew.bat test "-PappVersion=${{ steps.version.outputs.version }}"
+
+      - name: Testberichte sichern (bei Fehlern)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: build/reports/tests
+
+      - name: Programmordner, ZIP und MSI bauen
+        run: ./gradlew.bat dist "-PappVersion=${{ steps.version.outputs.version }}"
+
+      - name: Unsignierte Pakete hochladen
+        id: upload-unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned
+          path: |
+            dist/Rechtschreibung-*-portable.zip
+            dist/Rechtschreibung-*.msi
+          if-no-files-found: error
+
+      # --- Signieren über SignPath ----------------------------------------------------------
+      # Wird nur ausgeführt, wenn die Repository-Variable SIGNPATH_ORGANIZATION_ID gesetzt ist
+      # (Settings → Secrets and variables → Actions). Einrichtung: siehe README, Abschnitt „Signieren“.
+      - name: Bei SignPath signieren
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+
+      - name: Signierte Pakete hochladen
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed
+          path: signed/*
+          if-no-files-found: error
+
+  release:
+    name: An GitHub-Release anhängen
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Pakete holen (signiert, falls vorhanden)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "{signed,unsigned}"
+          path: artifacts
+
+      - name: Release anlegen oder Dateien ersetzen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          dir=artifacts/unsigned
+          [ -d artifacts/signed ] && dir=artifacts/signed
+          echo "Lade Dateien aus $dir hoch"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" "$dir"/* --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" "$dir"/* --title "Rechtschreibung ${TAG#v}" --generate-notes --repo "$GITHUB_REPOSITORY"
+          fi
